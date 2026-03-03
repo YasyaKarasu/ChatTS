@@ -1,0 +1,6 @@
+{
+    "method": "Jellyfish",
+    "dataset": "wta",
+    "record_start": 0,
+    "record_end": 2
+}
