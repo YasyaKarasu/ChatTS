@@ -144,6 +144,8 @@ Concise answer:""".format(QUESTION=question, RESPONSE=raw_response)}
 
 for record in data:
     original_question = record['original_question']
+    original_metadata = record['original_metadata']
+    original_answer = original_metadata['answer']
     df = pd.DataFrame(record['filled_sub_table_df'])
 
     query = [
@@ -224,6 +226,7 @@ Answer (Yes/No):""".format(QUESTION=original_question)}
         print("Processed Question:", question)
         print("Response:", response)
         print("Concise Answer:", concise_answer)
+        print("Original Answer:", original_answer)
     else:
         print("Processing record with multi time series question.")
 
@@ -343,3 +346,4 @@ Answer:""".format(
         print("Processed Question:", question)
         print("Response:", response)
         print("Concise Answer:", concise_answer)
+        print("Original Answer:", original_answer)
