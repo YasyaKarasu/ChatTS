@@ -26,8 +26,7 @@ class RecordProcessor:
 
     def process_record(self, record):
         original_question = record['original_question']
-        original_metadata = record['original_metadata']
-        original_answer = original_metadata['answer']
+        original_answer = record['answer']
         df = pd.DataFrame(record['filled_sub_table_df'])
 
         metric_column = self.llm_client.generate_response(
