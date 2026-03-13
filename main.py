@@ -255,7 +255,7 @@ Output:""".format(QUESTION=original_question)}
 2) name_cols: one or more columns that can be combined to form the entity display name in the question (e.g., first_name + last_name)
 
 Return ONLY JSON:
-{"id_col": "...", "name_cols": ["...", "..."]}
+{{"id_col": "...", "name_cols": ["...", "..."]}}
 
 Question: {QUESTION}
 Header: {HEADER}
