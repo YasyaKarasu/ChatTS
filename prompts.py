@@ -62,6 +62,27 @@ Answer (Yes/No):""".format(QUESTION=question)}
     ]
 
 
+def query_type_messages(question):
+    return [
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": """Classify the question into exactly one query type.
+
+Available labels:
+- trend_consistency_multiple: asks whether multiple time series trends are consistent/aligned (Yes/Partial/No).
+- trend_stability_single: asks whether one time series trend is stable (Yes/No).
+- trend_stability_multiple: asks which entity is more stable among multiple time series.
+- trend_analysis_single: asks the overall trend direction of one time series (rise/stable/fall).
+- nested_trend_single: asks whether one time series contains a sub-trend opposite to the whole trend (Yes/No).
+
+Rules:
+- Return ONLY one label from the list above.
+- No explanation.
+
+Question: {QUESTION}
+Label:""".format(QUESTION=question)}
+    ]
+
+
 def extract_entities_messages(question):
     return [
         {"role": "system", "content": "You are a helpful assistant."},

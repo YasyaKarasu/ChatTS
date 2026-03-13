@@ -8,7 +8,7 @@ from prompts import (
     id_name_mapping_messages,
     metric_column_messages,
     remove_time_period_messages,
-    single_timeseries_messages,
+    query_type_messages,
 )
 from table_utils import (
     clean_numeric_series,
@@ -17,6 +17,15 @@ from table_utils import (
     resolve_id_candidates,
 )
 from text_utils import name_match_score, parse_json_array
+
+
+VALID_QUERY_TYPES = {
+    "trend_consistency_multiple",
+    "trend_stability_single",
+    "trend_stability_multiple",
+    "trend_analysis_single",
+    "nested_trend_single",
+}
 
 
 class RecordProcessor:
@@ -34,27 +43,33 @@ class RecordProcessor:
         ).strip()
         clean_question = self.llm_client.generate_response(remove_time_period_messages(original_question))
 
-        response = self.llm_client.generate_response(single_timeseries_messages(original_question))
-        if response.strip().lower() == "yes":
+        query_type = self.llm_client.generate_response(
+            query_type_messages(original_question)
+        ).strip().lower()
+        if query_type not in VALID_QUERY_TYPES:
+            query_type = query_type.replace(" ", "_")
+
+        is_single = query_type.endswith("_single")
+
+        if is_single:
             return self._process_single(
-                df, metric_column, clean_question, original_question, original_answer
+                df, metric_column, clean_question, original_question, original_answer, query_type
             )
-        else:
-            return self._process_multi(
-                df, metric_column, clean_question, original_question, original_answer
-            )
+        return self._process_multi(
+            df, metric_column, clean_question, original_question, original_answer, query_type
+        )
 
     @staticmethod
     def _is_answer_consistent(concise_answer, original_answer):
         return str(concise_answer).strip().lower() == str(original_answer).strip().lower()
 
-    def _process_single(self, df, metric_column, clean_question, original_question, original_answer):
+    def _process_single(self, df, metric_column, clean_question, original_question, original_answer, query_type):
         print("Processing record with single time series question.")
         timeseries = clean_numeric_series(df[metric_column])
         print(timeseries)
 
         question = f"I have a time series length of {len(timeseries)}: <ts><ts/>. {clean_question}"
-        response = self.ts_model.generate(question, [timeseries])
+        response = self.ts_model.generate(question, [timeseries], query_type=query_type)
         concise_answer = extract_concise_answer(original_question, response, self.llm_client)
         is_consistent = self._is_answer_consistent(concise_answer, original_answer)
 
@@ -67,7 +82,7 @@ class RecordProcessor:
 
         return is_consistent
 
-    def _process_multi(self, df, metric_column, clean_question, original_question, original_answer):
+    def _process_multi(self, df, metric_column, clean_question, original_question, original_answer, query_type):
         print("Processing record with multi time series question.")
 
         entity_names = parse_json_array(self.llm_client.generate_response(extract_entities_messages(original_question)))
@@ -141,7 +156,10 @@ class RecordProcessor:
             question += f" Time series for {entity_label} has length of {len(ts)}: <ts><ts/>."
         question += " " + clean_question
 
-        response = self.ts_model.generate(question, timeseries)
+        answer_choices = final_entity_labels if query_type == "trend_stability_multiple" else None
+        response = self.ts_model.generate(
+            question, timeseries, query_type=query_type, answer_choices=answer_choices
+        )
         concise_answer = extract_concise_answer(original_question, response, self.llm_client)
         is_consistent = self._is_answer_consistent(concise_answer, original_answer)
 
