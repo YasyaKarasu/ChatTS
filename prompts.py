@@ -109,6 +109,7 @@ Rules:
 - Remove explanations, analysis, reasoning, and extra words.
 - For yes/no questions, output only "yes" or "no".
 - For choice/selection questions, output only the selected entity or option text.
+- For trend-direction questions (e.g., asks about trend direction / upward or downward movement), output exactly one label from: rise, fall, stable.
 - Keep original language when possible.
 - If multiple items are explicitly required by the question, output only those items as a concise comma-separated list.
 - Output plain text only.
