@@ -118,6 +118,30 @@ processor = AutoProcessor.from_pretrained(MODEL_PATH, trust_remote_code=True, to
 
 client = ImprovedLLMWrapper(backend="vllm", model_name="Qwen3-8B")
 
+
+def extract_concise_answer(question, raw_response, llm_client):
+    query = [
+        {"role": "system", "content": "You are an answer extraction assistant."},
+        {"role": "user", "content": """Given a user question and a model response, extract only the minimal final answer.
+
+Rules:
+- Remove explanations, analysis, reasoning, and extra words.
+- For yes/no questions, output only "yes" or "no".
+- For choice/selection questions, output only the selected entity or option text.
+- Keep original language when possible.
+- If multiple items are explicitly required by the question, output only those items as a concise comma-separated list.
+- Output plain text only.
+
+Question:
+{QUESTION}
+
+Model response:
+{RESPONSE}
+
+Concise answer:""".format(QUESTION=question, RESPONSE=raw_response)}
+    ]
+    return llm_client.generate_response(query).strip()
+
 for record in data:
     original_question = record['original_question']
     df = pd.DataFrame(record['filled_sub_table_df'])
@@ -195,9 +219,11 @@ Answer (Yes/No):""".format(QUESTION=original_question)}
         inputs = {k: v.to(0) for k, v in inputs.items()}
         outputs = model.generate(**inputs, max_new_tokens=300)
         response = tokenizer.decode(outputs[0][len(inputs['input_ids'][0]):], skip_special_tokens=True)
+        concise_answer = extract_concise_answer(original_question, response, client)
         print("Question:", original_question)
         print("Processed Question:", question)
         print("Response:", response)
+        print("Concise Answer:", concise_answer)
     else:
         print("Processing record with multi time series question.")
 
@@ -312,6 +338,8 @@ Answer:""".format(
         inputs = {k: v.to(0) for k, v in inputs.items()}
         outputs = model.generate(**inputs, max_new_tokens=300)
         response = tokenizer.decode(outputs[0][len(inputs['input_ids'][0]):], skip_special_tokens=True)
+        concise_answer = extract_concise_answer(original_question, response, client)
         print("Question:", original_question)
         print("Processed Question:", question)
         print("Response:", response)
+        print("Concise Answer:", concise_answer)
