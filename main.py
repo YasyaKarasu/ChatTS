@@ -28,8 +28,16 @@ def main():
     llm_client = ImprovedLLMWrapper(backend="vllm", model_name="Qwen3-8B")
 
     processor = RecordProcessor(llm_client=llm_client, ts_model=ts_model)
+    total = 0
+    consistent = 0
     for record in data:
-        processor.process_record(record)
+        result = processor.process_record(record)
+        if result is not None:
+            total += 1
+            consistent += int(result)
+
+    accuracy = (consistent / total) if total else 0.0
+    print(f"Final consistency accuracy: {consistent}/{total} = {accuracy:.2%}")
 
 
 if __name__ == "__main__":
