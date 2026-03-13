@@ -36,9 +36,17 @@ class RecordProcessor:
 
         response = self.llm_client.generate_response(single_timeseries_messages(original_question))
         if response.strip().lower() == "yes":
-            self._process_single(df, metric_column, clean_question, original_question, original_answer)
+            return self._process_single(
+                df, metric_column, clean_question, original_question, original_answer
+            )
         else:
-            self._process_multi(df, metric_column, clean_question, original_question, original_answer)
+            return self._process_multi(
+                df, metric_column, clean_question, original_question, original_answer
+            )
+
+    @staticmethod
+    def _is_answer_consistent(concise_answer, original_answer):
+        return str(concise_answer).strip().lower() == str(original_answer).strip().lower()
 
     def _process_single(self, df, metric_column, clean_question, original_question, original_answer):
         print("Processing record with single time series question.")
@@ -48,12 +56,16 @@ class RecordProcessor:
         question = f"I have a time series length of {len(timeseries)}: <ts><ts/>. {clean_question}"
         response = self.ts_model.generate(question, [timeseries])
         concise_answer = extract_concise_answer(original_question, response, self.llm_client)
+        is_consistent = self._is_answer_consistent(concise_answer, original_answer)
 
         print("Question:", original_question)
         print("Processed Question:", question)
         print("Response:", response)
         print("Concise Answer:", concise_answer)
         print("Original Answer:", original_answer)
+        print("Consistent:", is_consistent)
+
+        return is_consistent
 
     def _process_multi(self, df, metric_column, clean_question, original_question, original_answer):
         print("Processing record with multi time series question.")
@@ -131,9 +143,13 @@ class RecordProcessor:
 
         response = self.ts_model.generate(question, timeseries)
         concise_answer = extract_concise_answer(original_question, response, self.llm_client)
+        is_consistent = self._is_answer_consistent(concise_answer, original_answer)
 
         print("Question:", original_question)
         print("Processed Question:", question)
         print("Response:", response)
         print("Concise Answer:", concise_answer)
         print("Original Answer:", original_answer)
+        print("Consistent:", is_consistent)
+
+        return is_consistent
